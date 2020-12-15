@@ -3,8 +3,8 @@
   * 文件名程: gy-86.h 
   * 作    者: Jason_xy
   * 个人博客：https://jason-xy.cn
-  * 版    本: V1.0
-  * 编写日期: 2020-12-15
+  * 版    本: V1.1
+  * 编写日期: 2020-10-2
   * 功    能: GY-86初始化
   ******************************************************************************
   * 说明：
@@ -23,13 +23,19 @@
   * 7.温度计数据获取和解析。
   * 8.地磁仪数据获取。
   * 9.宏定义所需寄存器地址。
+  * 10.陀螺仪零飘矫正。
+  * 
+  * 更新：
+  * 2020-12-15
+  * 1.数据获取修改uint16_t为short。
+  * 2.添加陀螺仪零飘矫正。
   ******************************************************************************
   */
 
 #ifndef __GY_86_H__
 #define __GY_86_H__
 
-#include "stm32f4xx_hal.h"
+#include "stm32f1xx_hal.h"
 #include "i2c.h"
 
 #define MPU6050_ADD	0xD0	                   //器件地址（AD0悬空或低电平时地址是0xD0，为高电平时为0xD2，7位地址：1101 000x）
@@ -174,28 +180,34 @@
 #define HMC_WRITE 0x3C  //HMC的i2c写地址
 #define HMC_READ  0x3D	//HMC的i2c读地址
 
+extern short Gyro_xFix,Gyro_yFix,Gyro_zFix;
+extern short Gyro_x,Gyro_y,Gyro_z;
+
 uint8_t MPU_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf);    //IIC连续写
 uint8_t MPU_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf);     //IIC连续读 
 uint8_t MPU_Write_Byte(uint8_t reg,uint8_t data);				//IIC写一个字节
 uint8_t MPU_Read_Byte(uint8_t reg);					            //IIC读一个字节
-
-uint8_t MPU6050_Init(void);
-uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz);
-uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az);
-float MPU_Get_Temperature(void);
-uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr);
-uint8_t MPU_Set_Accel_Fsr(uint8_t fsr);
-uint8_t MPU_Set_Rate(uint16_t rate);
-
-
-void HMC_Init(void);
-void GY86_Init(void);
 uint8_t HMC_Write_Byte(uint8_t reg,uint8_t data);
 uint8_t HMC_Read_Byte(uint8_t reg);
 uint8_t HMC_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf);
 uint8_t HMC_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf);
 
-uint8_t READ_HMCALL(uint16_t* x,uint16_t* y, uint16_t* z);
+void GY86_Init(void);
+void HMC_Init(void);
+uint8_t MPU6050_Init(void);
+
+uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr);
+uint8_t MPU_Set_Accel_Fsr(uint8_t fsr);
+uint8_t MPU_Set_Rate(uint16_t rate);
+uint8_t MPU_Set_LPF(uint16_t lpf);
+
+uint8_t MPU_Get_Gyroscope(short *gx,short *gy,short *gz);
+uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az);
+uint8_t READ_HMCALL(short* x,short* y, short* z);
+float MPU_Get_Temperature(void);
+
+void GY86_SelfTest(void);
+void Gyro_Test(void);
 
 
 //void MPU6050_READ(u16* n);   

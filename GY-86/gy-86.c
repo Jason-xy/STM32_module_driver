@@ -3,8 +3,8 @@
   * 文件名程: gy-86.c 
   * 作    者: Jason_xy
   * 个人博客：https://jason-xy.cn
-  * 版    本: V1.0
-  * 编写日期: 2020-12-15
+  * 版    本: V1.1
+  * 编写日期: 2020-10-2
   * 功    能: GY-86初始化
   ******************************************************************************
   * 说明：
@@ -23,10 +23,22 @@
   * 7.温度计数据获取和解析。
   * 8.地磁仪数据获取。
   * 9.宏定义所需寄存器地址。
+  * 10.陀螺仪零飘矫正。
+  * 
+  * 更新：
+  * 2020-12-15
+  * 1.数据获取修改uint16_t为short。
+  * 2.添加陀螺仪零飘矫正。
   ******************************************************************************
   */
 #include "gy-86.h" 
 //#include "stdio.h"
+
+//校准参数
+short Gyro_xFix=0,Gyro_yFix=0,Gyro_zFix=0;
+
+//数据变量
+short Gyro_x=0,Gyro_y=0,Gyro_z=0;
 
 //IIC写一个字节 
 //reg:寄存器地址
@@ -102,17 +114,17 @@ uint8_t MPU6050_Init(void)
   MPU_Write_Byte(MPU6050_RA_PWR_MGMT_1,0X00);	//唤醒MPU6050 
   MPU_Set_Gyro_Fsr(3);					//陀螺仪传感器,±2000dps
   MPU_Set_Accel_Fsr(0);					//加速度传感器,±2g
-  MPU_Set_Rate(50);						//设置采样率50Hz
   MPU_Write_Byte(MPU6050_RA_INT_ENABLE,0X00);	//关闭所有中断
   MPU_Write_Byte(MPU6050_RA_USER_CTRL,0X00);	//I2C主模式关闭
   MPU_Write_Byte(MPU6050_RA_FIFO_EN,0X00);	//关闭FIFO
   MPU_Write_Byte(MPU6050_RA_INT_PIN_CFG,0X80);	//INT引脚低电平有效
+  MPU_Set_Rate(500);						//设置采样率为50Hz
+  MPU_Set_LPF(1000);            //数字低通滤波器1000Hz
   res=MPU_Read_Byte(MPU6050_RA_WHO_AM_I);
   if(res==MPU_ADDR)//器件ID正确
   {
     MPU_Write_Byte(MPU6050_RA_PWR_MGMT_1,0X01);	//设置CLKSEL,PLL X轴为参考
     MPU_Write_Byte(MPU6050_RA_PWR_MGMT_2,0X00);	//加速度与陀螺仪都工作
-    MPU_Set_Rate(50);						//设置采样率为50Hz
   }else
   {
 		return 1;
@@ -186,16 +198,16 @@ float MPU_Get_Temperature(void)
 //gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
 //返回值:0,成功
 //    其他,错误代码
-uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
+uint8_t MPU_Get_Gyroscope(short *gx,short *gy,short *gz)
 {
-    uint8_t buf[6],res; 
+    unsigned char buf[6],res; 
 	
 	res=MPU_Read_Len(MPU6050_RA_GYRO_XOUT_H, 6, buf);
 	if(res==0)
 	{
-		*gx=((uint16_t)buf[0]<<8)|buf[1];  
-		*gy=((uint16_t)buf[2]<<8)|buf[3];  
-		*gz=((uint16_t)buf[4]<<8)|buf[5];
+		*gx=((buf[0]<<8)|buf[1])-Gyro_xFix;  
+		*gy=((buf[2]<<8)|buf[3])-Gyro_yFix;  
+		*gz=((buf[4]<<8)|buf[5])-Gyro_zFix;
 	} 	
     return res;
 }
@@ -204,15 +216,15 @@ uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
 //gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
 //返回值:0,成功逻辑分析仪出现framing error
 //    其他,错误代码
-uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az)
+uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az)
 {
-    uint8_t buf[6],res;  
+    unsigned char buf[6],res;  
 	res=MPU_Read_Len(MPU6050_RA_ACCEL_XOUT_H, 6, buf);
 	if(res==0)
 	{
-		*ax=((uint16_t)buf[0]<<8)|buf[1];  
-		*ay=((uint16_t)buf[2]<<8)|buf[3];  
-		*az=((uint16_t)buf[4]<<8)|buf[5];
+		*ax=(buf[0]<<8)|buf[1];  
+		*ay=(buf[2]<<8)|buf[3];  
+		*az=(buf[4]<<8)|buf[5];
 	} 	
     return res;;
 }
@@ -225,6 +237,7 @@ void GY86_Init(void)
 	MPU_Write_Byte(MPU_CTRL, 0x00);  //将MPU的CTRL寄存器的第六位设置为0，与上面一步共同开启bypass模式
 	HAL_Delay(200);
 	HMC_Init();				        //HMC初始化
+  GY86_SelfTest();
 }
 
 //HMC初始化配置
@@ -237,16 +250,16 @@ void HMC_Init(void)
 }
 
 //HMC数据读取
-uint8_t READ_HMCALL(uint16_t* x,uint16_t* y, uint16_t* z)
+uint8_t READ_HMCALL(short* x,short* y, short* z)
 {
     uint8_t res;
-    uint8_t t[6];
+    unsigned char t[6];
     res=HMC_Read_Len(HMC_DATA_XMSB, 6, t);
     if(res == 0)
 		{			
-			*x = (uint16_t)((t[0]<<8)+t[1]);
-    	*y = (uint16_t)((t[2]<<8)+t[3]);
-    	*z = (uint16_t)((t[4]<<8)+t[5]);
+			*x = ((t[0]<<8)+t[1]);
+    	*y = ((t[2]<<8)+t[3]);
+    	*z = ((t[4]<<8)+t[5]);
 		}
     return res;
 }
@@ -312,4 +325,28 @@ uint8_t HMC_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf)
   HAL_Delay(100);
   
   return 0;	
+}
+
+//GY-86启动自检校准
+void GY86_SelfTest(void)
+{
+  Gyro_Test();
+}
+
+//陀螺仪校准
+void Gyro_Test(void)
+{
+  short sum_x=0,sum_y=0,sum_z=0;
+  Gyro_x=0,Gyro_y=0,Gyro_z=0;
+  int times = 50;
+  for(int i=0; i<times; i++)
+  {
+    MPU_Get_Gyroscope(&Gyro_x,&Gyro_y,&Gyro_z);
+    sum_x+=Gyro_x;
+    sum_y+=Gyro_y;
+    sum_z+=Gyro_z;
+  }
+  Gyro_xFix=sum_x/times;
+  Gyro_yFix=sum_y/times;
+  Gyro_zFix=sum_z/times;
 }
