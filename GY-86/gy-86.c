@@ -185,7 +185,7 @@ uint8_t MPU_Set_Rate(uint16_t rate)
 float MPU_Get_Temperature(void)
 {
   unsigned char  buf[2]; 
-  uint8_t raw;
+  uint16_t raw;
   float temp;
   
   MPU_Read_Len(MPU6050_RA_TEMP_OUT_H, 2, buf); 
