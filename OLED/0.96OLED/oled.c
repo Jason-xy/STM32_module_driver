@@ -260,7 +260,7 @@ void OLED_Draw_interface(void)
 }
 
 //OLED数据显示 3组
-void OLED_Show_3num(int x, int y, int z, unsigned introw)
+void OLED_Show_3num(int x, int y, int z, unsigned int row)
 {
 	OLED_ShowNum(22,row,x,3,12);
 	OLED_ShowNum(64,row,y,3,12);
