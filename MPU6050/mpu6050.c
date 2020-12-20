@@ -61,7 +61,7 @@ uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t *data)
 {
   extern I2C_HandleTypeDef MPU_I2C;
   
-  HAL_I2C_Mem_Read(&MPU_I2C, (addr<<1£©, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 0xfff);
+  HAL_I2C_Mem_Read(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, data, 1, 0xfff);
   HAL_Delay(100);
 
   return 0;
