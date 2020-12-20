@@ -40,6 +40,8 @@
   * 1.添加磁力计校准，8字校准方式。
   * 2.磁力计显式数据读出。
   * 3.陀螺仪显式数据读出。
+  * 2020-12-20
+  * 1.修改I2C读写入口参数，便于提供DMP接口。
   ******************************************************************************
   */
 
@@ -50,11 +52,19 @@
 #include "i2c.h"
 #include "math.h"
 
-#define M_PI 				3.1415926
-
-#define MPU6050_ADD	0xD0	                    //器件地址（AD0悬空或低电平时地址是0xD0，为高电平时为0xD2，7位地址：1101 000x）
 #define MPU_I2C     (hi2c2)                   //i2c句柄
+
+#define M_PI 				3.1415926
 #define MagnetcDeclination          1.16     //成都市地磁倾角
+
+//如果AD0脚(9脚)接地,IIC地址为0X68(不包含最低位).
+//如果接V3.3,则IIC地址为0X69(不包含最低位).
+#define MPU_ADDR				0X68
+
+//因为MPU6050的AD0接GND,所以则读写地址分别为0XD1和0XD0
+//            (如果AD0接VCC,则读写地址分别为0XD3和0XD2)  
+#define MPU_READ    0XD1//实际上就是MPU_ADDR左移低位补0还是补1(1101000x)
+#define MPU_WRITE   0XD0
 
 #define MPU6050_RA_XG_OFFS_TC       0x00 
 #define MPU6050_RA_YG_OFFS_TC       0x01 
@@ -167,15 +177,6 @@
 #define MPU6050_RA_FIFO_R_W         0x74        //FIFO读写寄存器
 #define MPU6050_RA_WHO_AM_I         0x75        //器件ID寄存器,who am i寄存器
 
-//如果AD0脚(9脚)接地,IIC地址为0X68(不包含最低位).
-//如果接V3.3,则IIC地址为0X69(不包含最低位).
-#define MPU_ADDR				0X68
-
-//因为MPU6050的AD0接GND,所以则读写地址分别为0XD1和0XD0
-//            (如果AD0接VCC,则读写地址分别为0XD3和0XD2)  
-#define MPU_READ    0XD1
-#define MPU_WRITE   0XD0
-
 #define MPU_CFG 0x37    //该寄存器与下面的寄存器都是用来开启MPU旁通模式
 #define MPU_CTRL 0x6A
 #define HMC_CONFIGA 0x00  //配置寄存器A
@@ -207,11 +208,12 @@ extern short Mag_x,Mag_y,Mag_z;
 
 //显式数据变量
 extern short Ax,Ay,Az;//单位：m/s^2
+extern short Gx,Gy,Gz;//单位：°/s
 
-uint8_t MPU_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf);    //IIC连续写
-uint8_t MPU_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf);     //IIC连续读 
-uint8_t MPU_Write_Byte(uint8_t reg,uint8_t data);				//IIC写一个字节
-uint8_t MPU_Read_Byte(uint8_t reg);					            //IIC读一个字节
+uint8_t MPU_Write_Byte(uint8_t addr,uint8_t reg,uint8_t data);    //IIC写一个字节
+uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t *data);		//IIC读一个字节
+uint8_t MPU_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);		//IIC连续写
+uint8_t MPU_Read_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);     //IIC连续读 
 uint8_t HMC_Write_Byte(uint8_t reg,uint8_t data);
 uint8_t HMC_Read_Byte(uint8_t reg);
 uint8_t HMC_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf);
