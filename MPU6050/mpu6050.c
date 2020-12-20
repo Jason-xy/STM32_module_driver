@@ -25,7 +25,17 @@
   */
 
 #include "mpu6050.h" 
-#include "stdio.h"
+
+//校准参数
+short Gyro_xFix=0,Gyro_yFix=0,Gyro_zFix=0;
+
+//原始数据变量
+short Gyro_x=0,Gyro_y=0,Gyro_z=0;
+short Accel_x=0,Accel_y=0,Accel_z=0;
+
+//显式数据变量
+short Ax=0,Ay=0,Az=0;//单位：m/s^2
+short Gx=0,Gy=0,Gz=0;//单位：°/s
 
 //IIC写一个字节 
 //reg:寄存器地址
@@ -184,7 +194,7 @@ float MPU_Get_Temperature(void)
 //gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
 //返回值:0,成功
 //    其他,错误代码
-uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
+uint8_t MPU_Get_Gyroscope(short *gx,short *gy,short *gz)
 {
     uint8_t buf[6],res; 
 	
@@ -202,7 +212,7 @@ uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
 //gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
 //返回值:0,成功逻辑分析仪出现framing error
 //    其他,错误代码
-uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az)
+uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az)
 {
     uint8_t buf[6],res;  
 	res=MPU_Read_Len(MPU_ADDR,MPU6050_RA_ACCEL_XOUT_H, 6, buf);

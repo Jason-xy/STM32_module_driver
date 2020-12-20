@@ -239,9 +239,6 @@ void GY86_SelfTest(void);
 void Gyro_Test(void);
 void Mag_Test(void);
 
-
-//void MPU6050_READ(u16* n);   
-
 #endif /* __GY_86_H__ */
 
 

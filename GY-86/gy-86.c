@@ -217,7 +217,7 @@ float MPU_Get_Temperature(void)
 //gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
 //返回值:0,成功
 //    其他,错误代码
-uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
+uint8_t MPU_Get_Gyroscope(short *gx,short *gy,short *gz)
 {
     uint8_t buf[6],res; 
 	
@@ -235,7 +235,7 @@ uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
 //gx,gy,gz:陀螺仪x,y,z轴的原始读数(带符号)
 //返回值:0,成功逻辑分析仪出现framing error
 //    其他,错误代码
-uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az)
+uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az)
 {
     uint8_t buf[6],res;  
 	res=MPU_Read_Len(MPU_ADDR,MPU6050_RA_ACCEL_XOUT_H, 6, buf);
@@ -252,8 +252,8 @@ uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az)
 void GY86_Init(void)
 {
   MPU6050_Init();
-	MPU_Write_Byte(MPU_CFG, 0x02);   //将MPU的CFG寄存器的第二位设置为1，其他位在使用MPU时配置
-	MPU_Write_Byte(MPU_CTRL, 0x00);  //将MPU的CTRL寄存器的第六位设置为0，与上面一步共同开启bypass模式
+	MPU_Write_Byte(MPU_ADDR,MPU_CFG, 0x02);   //将MPU的CFG寄存器的第二位设置为1，其他位在使用MPU时配置
+	MPU_Write_Byte(MPU_ADDR,MPU_CTRL, 0x00);  //将MPU的CTRL寄存器的第六位设置为0，与上面一步共同开启bypass模式
 	HAL_Delay(200);
 	HMC_Init();				        //HMC初始化
   GY86_SelfTest();

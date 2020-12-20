@@ -153,14 +153,25 @@
 #define MPU6050_RA_FIFO_R_W         0x74        //FIFO读写寄存器
 #define MPU6050_RA_WHO_AM_I         0x75        //器件ID寄存器,who am i寄存器
 
+//校准参数
+extern short Gyro_xFix,Gyro_yFix,Gyro_zFix;
+
+//原始数据变量
+extern short Gyro_x,Gyro_y,Gyro_z;
+extern short Accel_x,Accel_y,Accel_z;
+
+//显式数据变量
+extern short Ax,Ay,Az;//单位：m/s^2
+extern short Gx,Gy,Gz;//单位：°/s
+
 uint8_t MPU_Write_Byte(uint8_t addr,uint8_t reg,uint8_t data);    //IIC写一个字节
 uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t *data);		//IIC读一个字节
 uint8_t MPU_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);		//IIC连续写
 uint8_t MPU_Read_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);     //IIC连续读 
 		
 uint8_t MPU6050_Init(void);
-uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz);
-uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az);
+uint8_t MPU_Get_Gyroscope(short *gx,short *gy,short *gz);
+uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az);
 float MPU_Get_Temperature(void);
 uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr);
 uint8_t MPU_Set_Accel_Fsr(uint8_t fsr);
