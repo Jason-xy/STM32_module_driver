@@ -18,6 +18,10 @@
   * 4.加速度计数据获取。
   * 5.温度计数据获取和解析。
   * 6.宏定义所需寄存器地址。
+  * 
+  * 更新：
+  * 2020-12-20
+  * 1.修改I2C读写入口参数，便于提供DMP接口。
   ******************************************************************************
   */
 
@@ -27,7 +31,15 @@
 #include "stm32f4xx_hal.h"
 #include "i2c.h"
 
-#define MPU6050_ADD	0xD0	                   //器件地址（AD0悬空或低电平时地址是0xD0，为高电平时为0xD2，7位地址：1101 000x）
+//如果AD0脚(9脚)接地,IIC地址为0X68(不包含最低位).
+//如果接V3.3,则IIC地址为0X69(不包含最低位).
+#define MPU_ADDR				0X68
+
+//因为MPU6050的AD0接GND,所以则读写地址分别为0XD1和0XD0
+//            (如果AD0接VCC,则读写地址分别为0XD3和0XD2)  
+#define MPU_READ    0XD1//实际上就是MPU_ADDR左移低位补0还是补1(1101000x)
+#define MPU_WRITE   0XD0
+
 #define MPU_I2C     (hi2c2)                      //i2c句柄
 
 #define MPU6050_RA_XG_OFFS_TC       0x00 
@@ -141,20 +153,11 @@
 #define MPU6050_RA_FIFO_R_W         0x74        //FIFO读写寄存器
 #define MPU6050_RA_WHO_AM_I         0x75        //器件ID寄存器,who am i寄存器
 
-//如果AD0脚(9脚)接地,IIC地址为0X68(不包含最低位).
-//如果接V3.3,则IIC地址为0X69(不包含最低位).
-#define MPU_ADDR				0X68
-
-//因为MPU6050的AD0接GND,所以则读写地址分别为0XD1和0XD0
-//            (如果AD0接VCC,则读写地址分别为0XD3和0XD2)  
-#define MPU_READ    0XD1
-#define MPU_WRITE   0XD0
-
-uint8_t MPU_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf);    //IIC连续写
-uint8_t MPU_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf);     //IIC连续读 
-uint8_t MPU_Write_Byte(uint8_t reg,uint8_t data);				//IIC写一个字节
-uint8_t MPU_Read_Byte(uint8_t reg);					            //IIC读一个字节
-
+uint8_t MPU_Write_Byte(uint8_t addr,uint8_t reg,uint8_t data);    //IIC写一个字节
+uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t *data);		//IIC读一个字节
+uint8_t MPU_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);		//IIC连续写
+uint8_t MPU_Read_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);     //IIC连续读 
+		
 uint8_t MPU6050_Init(void);
 uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz);
 uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az);

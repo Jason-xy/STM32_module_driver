@@ -17,6 +17,10 @@
   * 3.陀螺仪数据获取。
   * 4.加速度计数据获取。
   * 5.温度计数据获取和解析。
+  * 
+  * 更新：
+  * 2020-12-20
+  * 1.修改I2C读写入口参数，便于提供DMP接口。
   ******************************************************************************
   */
 
@@ -28,13 +32,13 @@
 //data:数据
 //返回值:0,正常
 //      其他,错误代码
-uint8_t MPU_Write_Byte(uint8_t reg,uint8_t data) 				 
+uint8_t MPU_Write_Byte(uint8_t addr,uint8_t reg,uint8_t data) 				 
 { 
   extern I2C_HandleTypeDef MPU_I2C;
   unsigned char W_Data=0;
 
   W_Data = data;
-  HAL_I2C_Mem_Write(&MPU_I2C, MPU_WRITE, reg, I2C_MEMADD_SIZE_8BIT, &W_Data, 1, 0xfff);
+  HAL_I2C_Mem_Write(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, &W_Data, 1, 0xfff);
   HAL_Delay(100);
   
   return 0;
@@ -43,15 +47,14 @@ uint8_t MPU_Write_Byte(uint8_t reg,uint8_t data)
 //IIC读一个字节 
 //reg:寄存器地址 
 //返回值:读到的数据
-uint8_t MPU_Read_Byte(uint8_t reg)
+uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t data)
 {
   extern I2C_HandleTypeDef MPU_I2C;
-  unsigned char R_Data=1;
   
-  HAL_I2C_Mem_Read(&MPU_I2C, MPU_READ, reg, I2C_MEMADD_SIZE_8BIT, &R_Data, 1, 0xfff);
+  HAL_I2C_Mem_Read(&MPU_I2C, (addr<<1）, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 0xfff);
   HAL_Delay(100);
 
-  return R_Data;
+  return 0;
 }
 
 //IIC连续写
@@ -61,10 +64,10 @@ uint8_t MPU_Read_Byte(uint8_t reg)
 //buf:写数据的数据存储区
 //返回值:0,正常
 //      其他,错误代码
-uint8_t MPU_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf)
+uint8_t MPU_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf)
 {
   extern I2C_HandleTypeDef MPU_I2C;
-  HAL_I2C_Mem_Write(&MPU_I2C, MPU_WRITE, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
+  HAL_I2C_Mem_Write(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
   HAL_Delay(100);
   
   return 0;
@@ -77,10 +80,10 @@ uint8_t MPU_Write_Len(uint8_t reg,uint8_t len,uint8_t *buf)
 //buf:读取到的数据存储区
 //返回值:0,正常
 //      其他,错误代码
-uint8_t MPU_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf)
+uint8_t MPU_Read_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf)
 { 
   extern I2C_HandleTypeDef MPU_I2C;
-  HAL_I2C_Mem_Read(&MPU_I2C, MPU_READ, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
+  HAL_I2C_Mem_Read(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
   HAL_Delay(100);
   
   return 0;	
@@ -93,20 +96,20 @@ uint8_t MPU6050_Init(void)
 { 
   uint8_t res;
   extern I2C_HandleTypeDef MPU_I2C;
-  MPU_Write_Byte(MPU6050_RA_PWR_MGMT_1,0X80);	//复位MPU6050
-  MPU_Write_Byte(MPU6050_RA_PWR_MGMT_1,0X00);	//唤醒MPU6050 
+  MPU_Write_Byte(MPU_ADDR,MPU6050_RA_PWR_MGMT_1,0X80);	//复位MPU6050
+  MPU_Write_Byte(MPU_ADDR,MPU6050_RA_PWR_MGMT_1,0X00);	//唤醒MPU6050 
   MPU_Set_Gyro_Fsr(3);					//陀螺仪传感器,±2000dps
   MPU_Set_Accel_Fsr(0);					//加速度传感器,±2g
   MPU_Set_Rate(50);						//设置采样率50Hz
-  MPU_Write_Byte(MPU6050_RA_INT_ENABLE,0X00);	//关闭所有中断
-  MPU_Write_Byte(MPU6050_RA_USER_CTRL,0X00);	//I2C主模式关闭
-  MPU_Write_Byte(MPU6050_RA_FIFO_EN,0X00);	//关闭FIFO
-  MPU_Write_Byte(MPU6050_RA_INT_PIN_CFG,0X80);	//INT引脚低电平有效
-  res=MPU_Read_Byte(MPU6050_RA_WHO_AM_I);
+  MPU_Write_Byte(MPU_ADDR,MPU6050_RA_INT_ENABLE,0X00);	//关闭所有中断
+  MPU_Write_Byte(MPU_ADDR,MPU6050_RA_USER_CTRL,0X00);	//I2C主模式关闭
+  MPU_Write_Byte(MPU_ADDR,MPU6050_RA_FIFO_EN,0X00);	//关闭FIFO
+  MPU_Write_Byte(MPU_ADDR,MPU6050_RA_INT_PIN_CFG,0X80);	//INT引脚低电平有效
+  MPU_Read_Byte(MPU_ADDR,MPU6050_RA_WHO_AM_I,&res);
   if(res==MPU_ADDR)//器件ID正确
   {
-    MPU_Write_Byte(MPU6050_RA_PWR_MGMT_1,0X01);	//设置CLKSEL,PLL X轴为参考
-    MPU_Write_Byte(MPU6050_RA_PWR_MGMT_2,0X00);	//加速度与陀螺仪都工作
+    MPU_Write_Byte(MPU_ADDR,MPU6050_RA_PWR_MGMT_1,0X01);	//设置CLKSEL,PLL X轴为参考
+    MPU_Write_Byte(MPU_ADDR,MPU6050_RA_PWR_MGMT_2,0X00);	//加速度与陀螺仪都工作
     MPU_Set_Rate(50);						//设置采样率为50Hz
   }else
   {
@@ -121,7 +124,7 @@ uint8_t MPU6050_Init(void)
 //    其他,设置失败 
 uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr)
 {
-	return MPU_Write_Byte(MPU6050_RA_GYRO_CONFIG, fsr<<3);//设置陀螺仪满量程范围  
+	return MPU_Write_Byte(MPU_ADDR,MPU6050_RA_GYRO_CONFIG, fsr<<3);//设置陀螺仪满量程范围  
 }
 
 //设置MPU6050加速度传感器满量程范围
@@ -130,7 +133,7 @@ uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr)
 //    其他,设置失败 
 uint8_t MPU_Set_Accel_Fsr(uint8_t fsr)
 {
-	return MPU_Write_Byte(MPU6050_RA_ACCEL_CONFIG, fsr<<3);//设置加速度传感器满量程范围  
+	return MPU_Write_Byte(MPU_ADDR,MPU6050_RA_ACCEL_CONFIG, fsr<<3);//设置加速度传感器满量程范围  
 }
 
 //设置MPU6050的数字低通滤波器
@@ -146,7 +149,7 @@ uint8_t MPU_Set_LPF(uint16_t lpf)
 	else if(lpf>=20)data=4;
 	else if(lpf>=10)data=5;
 	else data=6; 
-	return MPU_Write_Byte(MPU6050_RA_CONFIG, data);//设置数字低通滤波器  
+	return MPU_Write_Byte(MPU_ADDR,MPU6050_RA_CONFIG, data);//设置数字低通滤波器  
 }
 
 //设置MPU6050的采样率(假定Fs=1KHz)
@@ -159,7 +162,7 @@ uint8_t MPU_Set_Rate(uint16_t rate)
 	if(rate>1000)rate=1000;
 	if(rate<4)rate=4;
 	data=1000/rate-1;
-	data=MPU_Write_Byte(MPU6050_RA_SMPLRT_DIV, data);	//设置数字低通滤波器
+	data=MPU_Write_Byte(MPU_ADDR,MPU6050_RA_SMPLRT_DIV, data);	//设置数字低通滤波器
  	return MPU_Set_LPF(rate/2);	//自动设置LPF为采样率的一半
 }
 
@@ -171,7 +174,7 @@ float MPU_Get_Temperature(void)
   uint8_t raw;
   float temp;
   
-  MPU_Read_Len(MPU6050_RA_TEMP_OUT_H, 2, buf); 
+  MPU_Read_Len(MPU_ADDR,MPU6050_RA_TEMP_OUT_H, 2, buf); 
   raw=(buf[0]<<8)| buf[1];  
   temp=(36.53+((double)raw)/340)*100;  
   return temp/100.0f;
@@ -185,7 +188,7 @@ uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
 {
     uint8_t buf[6],res; 
 	
-	res=MPU_Read_Len(MPU6050_RA_GYRO_XOUT_H, 6, buf);
+	res=MPU_Read_Len(MPU_ADDR,MPU6050_RA_GYRO_XOUT_H, 6, buf);
 	if(res==0)
 	{
 		*gx=((uint16_t)buf[0]<<8)|buf[1];  
@@ -202,7 +205,7 @@ uint8_t MPU_Get_Gyroscope(uint16_t *gx,uint16_t *gy,uint16_t *gz)
 uint8_t MPU_Get_Accelerometer(uint16_t *ax,uint16_t *ay,uint16_t *az)
 {
     uint8_t buf[6],res;  
-	res=MPU_Read_Len(MPU6050_RA_ACCEL_XOUT_H, 6, buf);
+	res=MPU_Read_Len(MPU_ADDR,MPU6050_RA_ACCEL_XOUT_H, 6, buf);
 	if(res==0)
 	{
 		*ax=((uint16_t)buf[0]<<8)|buf[1];  
