@@ -209,6 +209,7 @@ extern short Mag_x,Mag_y,Mag_z;
 //显式数据变量
 extern short Ax,Ay,Az;//单位：m/s^2
 extern short Gx,Gy,Gz;//单位：°/s
+extern short Mxy,Myz,Mzx;//单位：°
 
 uint8_t MPU_Write_Byte(uint8_t addr,uint8_t reg,uint8_t data);    //IIC写一个字节
 uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t *data);		//IIC读一个字节
@@ -233,7 +234,8 @@ uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az);
 uint8_t READ_HMCALL(short* x,short* y, short* z);
 float MPU_Get_Temperature(void);
 void read_hmc_degree(short *x,short *y,short* z);
-void read_Gyroscope_DPS(short *x,short *y,short* z);
+void read_Gyroscope_DPS(void);
+void read_Accelerometer_MPS(void);
 
 void GY86_SelfTest(void);
 void Gyro_Test(void);

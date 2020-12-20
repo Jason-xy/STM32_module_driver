@@ -59,6 +59,7 @@ short Mag_x=0,Mag_y=0,Mag_z=0;
 //显式数据变量
 short Ax=0,Ay=0,Az=0;//单位：m/s^2
 short Gx=0,Gy=0,Gz=0;//单位：°/s
+short Mxy=0,Myz=0,Mzx=0;//单位：°
 
 //IIC写一个字节 
 //reg:寄存器地址
@@ -72,8 +73,6 @@ uint8_t MPU_Write_Byte(uint8_t addr,uint8_t reg,uint8_t data)
 
   W_Data = data;
   HAL_I2C_Mem_Write(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, &W_Data, 1, 0xfff);
-  HAL_Delay(100);
-  
   return 0;
 }
 
@@ -85,8 +84,6 @@ uint8_t MPU_Read_Byte(uint8_t addr,uint8_t reg,uint8_t *data)
   extern I2C_HandleTypeDef MPU_I2C;
   
   HAL_I2C_Mem_Read(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, data, 1, 0xfff);
-  HAL_Delay(100);
-
   return 0;
 }
 
@@ -101,8 +98,6 @@ uint8_t MPU_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf)
 {
   extern I2C_HandleTypeDef MPU_I2C;
   HAL_I2C_Mem_Write(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
-  HAL_Delay(100);
-  
   return 0;
 }
 
@@ -117,8 +112,6 @@ uint8_t MPU_Read_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf)
 { 
   extern I2C_HandleTypeDef MPU_I2C;
   HAL_I2C_Mem_Read(&MPU_I2C, (addr<<1), reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
-  HAL_Delay(100);
-  
   return 0;	
 }
 
@@ -204,7 +197,7 @@ uint8_t MPU_Set_Rate(uint16_t rate)
 float MPU_Get_Temperature(void)
 {
   unsigned char  buf[2]; 
-  uint8_t raw;
+  uint16_t raw;
   float temp;
   
   MPU_Read_Len(MPU_ADDR,MPU6050_RA_TEMP_OUT_H, 2, buf); 
@@ -434,10 +427,19 @@ void read_hmc_degree(short *M_xy,short *M_yz,short* M_zx)
 }
 
 //陀螺仪显式数据读取。单位：°/s
-void read_Gyroscope_DPS(short *x,short *y,short* z)
+void read_Gyroscope_DPS(void)
 {
 	MPU_Get_Gyroscope(&Gyro_x,&Gyro_y,&Gyro_z);
-  *x=(Gyro_x-Gyro_xFix)/131.2f;
-  *y=(Gyro_y-Gyro_yFix)/131.2f;
-  *z=(Gyro_z-Gyro_zFix)/131.2f;
+  Gx=(Gyro_x-Gyro_xFix)/131.2f;
+  Gy=(Gyro_y-Gyro_yFix)/131.2f;
+  Gz=(Gyro_z-Gyro_zFix)/131.2f;
+}
+
+//加速度计显式数据读取。 单位：m/s^2
+void read_Accelerometer_MPS(void)
+{
+  MPU_Get_Accelerometer(&Accel_x,&Accel_y,&Accel_z);
+  Ax=Accel_x/1673.469f;
+  Ay=Accel_y/1673.469f;
+  Az=Accel_z/1673.469f;
 }
