@@ -272,3 +272,100 @@ void OLED_Show_2num(int x, int y, unsigned int row)
 	OLED_ShowNum(24,row,x,3,12);
 	OLED_ShowNum(88,row,y,3,12);
 }
+
+//波形更新
+void Before_State_Update(uint8_t y)//根据y的值，求出前一个数据的有关参数
+{
+	Bef[0]=7-y/8;
+	Bef[1]=7-y%8;
+	Bef[2]=1<<Bef[1];
+}
+void Current_State_Update(uint8_t y)//根据Y值，求出当前数据的有关参数
+{
+	Cur[0]=7-y/8;//数据写在第几页
+	Cur[1]=7-y%8;//0x01要移动的位数
+	Cur[2]=1<<Cur[1];//要写什么数据
+}
+
+
+/*0<=x<=127,0<=y<=63屏幕看作一个坐标轴，左下角是原点*/
+void OLED_DrawPoint(uint8_t x,uint8_t y)/*这里x是横坐标，y是纵坐标，在（x,y）处画一个点*/
+{
+	if(x>127||y>63)
+		return;
+	uint8_t page,move,data;
+	
+	page=7-y/8;//数据写在第几页
+	move=7-y%8;//0x01要移动的位数
+	data=0x01<<move;//要写什么数据
+	
+	OLED_Set_Pos(x,page);
+	OLED_WR_DATA(data);
+}
+	
+void OLED_DrawWave(uint8_t x,uint8_t y)
+{
+
+	int8_t page_sub;
+	uint8_t page_buff,i,j;
+	Current_State_Update(y);//根据Y值，求出当前数据的有关参数
+	page_sub=Bef[0]-Cur[0];//当前值与前一个值的页数相比较
+	//确定当前列，每一页应该写什么数据
+	if(page_sub>0)
+	{
+		page_buff=Bef[0];
+		OLED_Set_Pos(x,page_buff);
+		OLED_WR_DATA(Bef[2]-0x01);
+		page_buff--;
+		for(i=0;i<page_sub-1;i++)
+		{
+			OLED_Set_Pos(x,page_buff);
+			OLED_WR_DATA(0xff);
+			page_buff--;
+		}
+		OLED_Set_Pos(x,page_buff);
+		OLED_WR_DATA(0xff<<Cur[1]);
+	}
+	else if(page_sub==0)
+	{
+		if(Cur[1]==Bef[1])
+		{
+			OLED_Set_Pos(x,Cur[0]);
+			OLED_WR_DATA(Cur[2]);
+		}
+		else if(Cur[1]>Bef[1])
+		{
+			OLED_Set_Pos(x,Cur[0]);
+			OLED_WR_DATA((Cur[2]-Bef[2])|Cur[2]);
+		}
+		else if(Cur[1]<Bef[1])
+		{
+			OLED_Set_Pos(x,Cur[0]);
+			OLED_WR_DATA(Bef[2]-Cur[2]);
+		}
+	}
+	else if(page_sub<0)
+	{
+		page_buff=Cur[0];
+		OLED_Set_Pos(x,page_buff);
+		OLED_WR_DATA((Cur[2]<<1)-0x01);
+		page_buff--;
+		for(i=0;i<0-page_sub-1;i++)
+		{
+			OLED_Set_Pos(x,page_buff);
+			OLED_WR_DATA(0xff);
+			page_buff--;
+		}
+		OLED_Set_Pos(x,page_buff);
+		OLED_WR_DATA(0xff<<(Bef[1]+1));
+	}
+	Before_State_Update(y);
+	//把下一列，每一页的数据清除掉
+	for(i=0;i<8;i++)
+	{
+		OLED_Set_Pos(x+1, i) ;
+		for(j=0;j<1;j++)
+			OLED_WR_DATA(0x00);
+	}
+}
+
