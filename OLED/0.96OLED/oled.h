@@ -24,6 +24,8 @@
   * 更新：
   * 2020-12-16
   * 1.修改ShowNum支持int类型带符号数字输出。
+  * 2021-4-6
+  * 1.新增波形绘制。
   ******************************************************************************
   */
 
@@ -86,6 +88,18 @@ void OLED_Show_3num(int x, int y, int z, unsigned int row);
 
 //OLED数据显示 2组
 void OLED_Show_2num(int x, int y, unsigned int row);
+
+//根据y的值，求出前一个数据的有关参数
+void Before_State_Update(uint8_t y);
+
+////根据Y值，求出当前数据的有关参数
+void Current_State_Update(uint8_t y);
+
+//0<=x<=127,0<=y<=63屏幕看作一个坐标轴，左下角是原点
+void OLED_DrawPoint(uint8_t x,uint8_t y);
+
+//画波形
+void OLED_DrawWave(uint8_t x,uint8_t y);
 
 
 #endif
